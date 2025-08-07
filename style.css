@@ -38,28 +38,21 @@ body {
 
 #block-picker {
   display: flex;
-  justify-content: center;
-  gap: 30px;
+  justify-content: center; /* 中央揃え */
+  gap: 8px;                /* ブロック間の隙間を8pxに狭める */
+  margin-bottom: 20px;
 }
 
 .block-slot {
-  width: 160px;
-  height: 160px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: fit-content;
+  user-select: none;
 }
 
 .block {
   cursor: grab;
-  user-select: none;
-  display: inline-block;
-  /* 初期サイズを小さく（半分サイズに縮小） */
+  /* 既に大きさ調整してるならここはそのままでOK */
+  /* scaleはJSで制御しているならCSSでは通常サイズで */
   transform-origin: top left;
-  transform: scale(0.5);
-  transition: transform 0.2s;
-  position: relative;
-  /* ブロックのセルは20x20pxに対応（半分サイズ） */
 }
 
 .block.dragging {
