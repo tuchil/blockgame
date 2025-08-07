@@ -73,8 +73,8 @@ function renderBlocks() {
       const blockDiv = document.createElement("div");
       blockDiv.classList.add("block");
       blockDiv.dataset.index = i;
-      blockDiv.style.position = "relative"; // 初期はrelative
-      blockDiv.style.transform = "scale(0.5)"; // 小さく表示（CSSと合わせて）
+      blockDiv.style.position = "relative";
+      blockDiv.style.transform = "scale(0.5)";
 
       block.shape.forEach(row => {
         const rowDiv = document.createElement("div");
@@ -95,55 +95,41 @@ function renderBlocks() {
         startDragging(blockDiv, i, e.clientX, e.clientY);
       });
 
-      // スマホ用タッチ開始
-      blockDiv.addEventListener("dragstart", e => {
-        e.dataTransfer.setData("text/plain", i);
-
-        const dragIcon = document.createElement("canvas");
-        const ctx = dragIcon.getContext("2d");
-        const blockSize = 50; // 例として50px四方
-
-        dragIcon.width = blockSize;
-        dragIcon.height = blockSize;
-
-        ctx.fillStyle = block.color;
-        ctx.fillRect(0, 0, blockSize, blockSize);
-
-  
-        e.dataTransfer.setDragImage(dragIcon, blockSize / 2, blockSize / 2 + 20);
+      // スマホ用ドラッグ開始
+      blockDiv.addEventListener("touchstart", e => {
+        e.preventDefault();
+        if (gameOver) return;
+        const touch = e.touches[0];
+        startDragging(blockDiv, i, touch.clientX, touch.clientY);
       });
 
+      picker.appendChild(blockSlot);
       blockSlot.appendChild(blockDiv);
     } else {
       blockSlot.innerHTML = "";
       blockSlot.style.pointerEvents = "none";
+      picker.appendChild(blockSlot);
     }
-
-    picker.appendChild(blockSlot);
   }
 }
 
 function startDragging(blockDiv, index, clientX, clientY) {
   draggingBlock = { blockDiv, index };
 
-  // ブロックの初期座標とサイズ取得
   const rect = blockDiv.getBoundingClientRect();
 
-  // マウス・タッチ位置とブロック左上のズレを取得
   dragOffsetX = clientX - rect.left;
   dragOffsetY = clientY - rect.top;
 
-  // 拡大＆絶対配置に切り替え
   blockDiv.style.position = "absolute";
   blockDiv.style.transform = "scale(1)";
-  blockDiv.style.width = `${CELL_SIZE * blockTypes[currentBlocks[index].shape.length ? currentBlocks[index].shape[0].length : 1]}px`;
+  blockDiv.style.width = `${CELL_SIZE * currentBlocks[index].shape[0].length}px`;
   blockDiv.style.height = `${CELL_SIZE * currentBlocks[index].shape.length}px`;
   blockDiv.style.zIndex = 1000;
   blockDiv.classList.add("dragging");
 
   moveAt(clientX, clientY);
 
-  // マウス・タッチの移動時の処理
   function moveAt(pageX, pageY) {
     blockDiv.style.left = (pageX - dragOffsetX) + "px";
     blockDiv.style.top = (pageY - dragOffsetY) + "px";
@@ -175,11 +161,10 @@ function startDragging(blockDiv, index, clientX, clientY) {
 
     const boardRect = document.getElementById("game-board").getBoundingClientRect();
 
-    // ドロップ位置からdragOffsetを差し引いて盤面内座標に変換
-    const dropX = x - boardRect.left - dragOffsetX;
-    const dropY = y - boardRect.top - dragOffsetY;
+    // ドロップ位置を盤面内座標に変換（左上セルの座標に補正せずブロック中心で判断）
+    const dropX = x - boardRect.left - (blockDiv.offsetWidth / 2);
+    const dropY = y - boardRect.top - (blockDiv.offsetHeight / 2);
 
-    // セル座標に丸め込み（0未満や盤面外ははみ出し扱い）
     const gridX = Math.round(dropX / CELL_SIZE);
     const gridY = Math.round(dropY / CELL_SIZE);
 
@@ -195,7 +180,6 @@ function startDragging(blockDiv, index, clientX, clientY) {
         renderBlocks();
       }
     } else {
-      // 置けなかったら元に戻すだけ
       renderBlocks();
     }
 
@@ -223,9 +207,10 @@ function startDragging(blockDiv, index, clientX, clientY) {
   window.addEventListener("touchend", onEnd);
   window.addEventListener("touchcancel", onEnd);
 }
+
 function canPlaceBlock(block, x, y) {
-  const shape = block.shape;
   if (!block) return false;
+  const shape = block.shape;
   for (let i = 0; i < shape.length; i++) {
     for (let j = 0; j < shape[i].length; j++) {
       if (shape[i][j]) {
@@ -302,19 +287,21 @@ function checkGameOver() {
 }
 
 function resetGame() {
-  // 盤面を空に
   board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(0));
-  // スコア初期化
   score = 0;
   updateScore();
-  // ブロック新規選出
   currentBlocks = pickRandomBlocks();
-  // 盤面・ブロック再描画
   renderBoard();
   renderBlocks();
-  // Game Over表示非表示に
   const gameOverEl = document.getElementById("game-over");
-  gameOverEl.style.display = "none";
-  // ゲーム状態リセット用フラグもあればここで
-  gameIsOver = false;  // もしゲーム終了判定に使ってたら
+  if (gameOverEl) gameOverEl.style.display = "none";
+  gameOver = false;
+  draggingBlock = null;
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  const resetBtn = document.getElementById("reset-button");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", resetGame);
+  }
+});
