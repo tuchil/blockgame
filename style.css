@@ -37,7 +37,6 @@ body {
 }
 
 #block-picker {
-  margin-left: 10px;
   display: flex;
   justify-content: center; /* 中央揃え */
   gap: 3px;                /* ブロック間の隙間を8pxに狭める */
@@ -45,8 +44,10 @@ body {
 }
 
 .block-slot {
-  width: fit-content;
+  width: 176px; /* 40px * 4 + マージン程度 (4セル分想定) */
   user-select: none;
+  display: flex;
+  justify-content: center; /* 中央揃え */
 }
 
 .block {
