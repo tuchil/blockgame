@@ -1,16 +1,9 @@
 const WIDTH = 8;
 const HEIGHT = 8;
-const CELL_SIZE = 42; // 40px + 2px gap
+const CELL_SIZE = 40; // セルの大きさ(px)
 
 let score = 0;
 let board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(0));
-let currentBlocks = [];
-let gameOver = false;
-
-// ドラッグ中情報（タッチ兼用）
-let draggingBlock = null;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
 
 const blockTypes = [
   { shape: [[1, 1, 1, 1]], color: "#f00" },
@@ -22,63 +15,51 @@ const blockTypes = [
   { shape: [[0, 1, 0], [1, 1, 1]], color: "#999" }
 ];
 
-// 初期化
-resetGame();
+let currentBlocks = pickRandomBlocks();
 
-function resetGame() {
-  score = 0;
-  updateScore();
-  board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(0));
-  currentBlocks = pickRandomBlocks();
-  gameOver = false;
-  document.getElementById("game-over").style.display = "none";
-  createBoard();
-  renderBoard();
-  renderBlocks();
-}
+let draggingBlock = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let gameOver = false;
 
-// スコア表示更新
+updateScore();
+createBoard();
+renderBoard();
+renderBlocks();
+
 function updateScore() {
-  document.getElementById("score").textContent = `スコア: ${score}`;
+  const scoreEl = document.getElementById("score");
+  if (scoreEl) {
+    scoreEl.textContent = `スコア: ${score}`;
+  }
 }
 
-// 盤面作成（div.cell）
 function createBoard() {
   const boardElement = document.getElementById("game-board");
   boardElement.innerHTML = "";
-  for (let i = 0; i < WIDTH * HEIGHT; i++) {
+  for (let i = 0; i < HEIGHT * WIDTH; i++) {
     const cell = document.createElement("div");
     cell.classList.add("cell");
     cell.dataset.index = i;
-    // PC向けドロップ
-    cell.addEventListener("dragover", e => e.preventDefault());
-    cell.addEventListener("drop", handleDrop);
     boardElement.appendChild(cell);
   }
 }
 
-// 盤面描画
 function renderBoard() {
   const cells = document.querySelectorAll("#game-board .cell");
   for (let y = 0; y < HEIGHT; y++) {
     for (let x = 0; x < WIDTH; x++) {
       const index = y * WIDTH + x;
-      if (board[y][x]) {
-        cells[index].classList.add("filled");
-      } else {
-        cells[index].classList.remove("filled");
-      }
+      cells[index].style.backgroundColor = board[y][x] ? "#666" : "#fff";
     }
   }
 }
 
-// ランダムに3つブロック選ぶ
 function pickRandomBlocks() {
   const shuffled = [...blockTypes].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, 3);
 }
 
-// ブロック表示＆ドラッグイベント設定
 function renderBlocks() {
   const picker = document.getElementById("block-picker");
   picker.innerHTML = "";
@@ -91,8 +72,9 @@ function renderBlocks() {
     if (block) {
       const blockDiv = document.createElement("div");
       blockDiv.classList.add("block");
-      blockDiv.setAttribute("draggable", !gameOver);
       blockDiv.dataset.index = i;
+      blockDiv.style.position = "relative"; // 初期はrelative
+      blockDiv.style.transform = "scale(0.5)"; // 小さく表示（CSSと合わせて）
 
       block.shape.forEach(row => {
         const rowDiv = document.createElement("div");
@@ -106,21 +88,20 @@ function renderBlocks() {
         blockDiv.appendChild(rowDiv);
       });
 
-      // PC用ドラッグイベント
-      blockDiv.addEventListener("dragstart", e => {
-        if (gameOver) {
-          e.preventDefault();
-          return;
-        }
-        const rect = e.target.getBoundingClientRect();
-        dragOffsetX = e.clientX - rect.left;
-        dragOffsetY = e.clientY - rect.top;
-        draggingBlock = { blockDiv, index: i };
-        e.dataTransfer.setData("text/plain", i);
+      // PC用ドラッグ開始
+      blockDiv.addEventListener("mousedown", e => {
+        e.preventDefault();
+        if (gameOver) return;
+        startDragging(blockDiv, i, e.clientX, e.clientY);
       });
 
-      // スマホ用タッチドラッグ設定
-      setupTouchDrag(blockDiv, i);
+      // スマホ用タッチ開始
+      blockDiv.addEventListener("touchstart", e => {
+        e.preventDefault();
+        if (gameOver) return;
+        const touch = e.touches[0];
+        startDragging(blockDiv, i, touch.clientX, touch.clientY);
+      });
 
       blockSlot.appendChild(blockDiv);
     } else {
@@ -132,48 +113,180 @@ function renderBlocks() {
   }
 }
 
-// PC向けドロップ処理
-function handleDrop(e) {
-  if (gameOver) return;
-  e.preventDefault();
+function startDragging(blockDiv, index, clientX, clientY) {
+  draggingBlock = { blockDiv, index };
 
-  const draggedIndex = Number(e.dataTransfer.getData("text/plain"));
-  const block = currentBlocks[draggedIndex];
+  // ブロックの初期座標とサイズ取得
+  const rect = blockDiv.getBoundingClientRect();
 
-  const boardRect = document.getElementById("game-board").getBoundingClientRect();
-  const dropX = e.clientX - boardRect.left - dragOffsetX;
-  const dropY = e.clientY - boardRect.top - dragOffsetY;
+  // マウス・タッチ位置とブロック左上のズレを取得
+  dragOffsetX = clientX - rect.left;
+  dragOffsetY = clientY - rect.top;
 
-  const x = Math.round(dropX / CELL_SIZE);
-  const y = Math.round(dropY / CELL_SIZE);
+  // 拡大＆絶対配置に切り替え
+  blockDiv.style.position = "absolute";
+  blockDiv.style.transform = "scale(1)";
+  blockDiv.style.width = `${CELL_SIZE * blockTypes[currentBlocks[index].shape.length ? currentBlocks[index].shape[0].length : 1]}px`;
+  blockDiv.style.height = `${CELL_SIZE * currentBlocks[index].shape.length}px`;
+  blockDiv.style.zIndex = 1000;
+  blockDiv.classList.add("dragging");
 
-  if (canPlaceBlock(block, x, y)) {
-    placeBlock(block, x, y);
-    currentBlocks[draggedIndex] = null;
-    score += 10;
-    updateScore();
-    renderBlocks();
+  moveAt(clientX, clientY);
 
-    if (currentBlocks.every(b => b === null)) {
-      currentBlocks = pickRandomBlocks();
+  // マウス・タッチの移動時の処理
+  function moveAt(pageX, pageY) {
+    blockDiv.style.left = (pageX - dragOffsetX) + "px";
+    blockDiv.style.top = (pageY - dragOffsetY) + "px";
+  }
+
+  function onMove(event) {
+    event.preventDefault();
+    let x, y;
+    if (event.type.startsWith("touch")) {
+      x = event.touches[0].clientX;
+      y = event.touches[0].clientY;
+    } else {
+      x = event.clientX;
+      y = event.clientY;
+    }
+    moveAt(x, y);
+  }
+
+  function onEnd(event) {
+    event.preventDefault();
+    let x, y;
+    if (event.type.startsWith("touch")) {
+      x = event.changedTouches[0].clientX;
+      y = event.changedTouches[0].clientY;
+    } else {
+      x = event.clientX;
+      y = event.clientY;
+    }
+
+    const boardRect = document.getElementById("game-board").getBoundingClientRect();
+
+    // ドロップ位置からdragOffsetを差し引いて盤面内座標に変換
+    const dropX = x - boardRect.left - dragOffsetX;
+    const dropY = y - boardRect.top - dragOffsetY;
+
+    // セル座標に丸め込み（0未満や盤面外ははみ出し扱い）
+    const gridX = Math.round(dropX / CELL_SIZE);
+    const gridY = Math.round(dropY / CELL_SIZE);
+
+    if (canPlaceBlock(currentBlocks[index], gridX, gridY)) {
+      placeBlock(currentBlocks[index], gridX, gridY);
+      currentBlocks[index] = null;
+      score += 10;
+      updateScore();
+      renderBlocks();
+
+      if (currentBlocks.every(b => b === null)) {
+        currentBlocks = pickRandomBlocks();
+        renderBlocks();
+      }
+    } else {
+      // 置けなかったら元に戻すだけ
       renderBlocks();
     }
+
+    blockDiv.style.position = "relative";
+    blockDiv.style.transform = "scale(0.5)";
+    blockDiv.style.width = "";
+    blockDiv.style.height = "";
+    blockDiv.style.left = "";
+    blockDiv.style.top = "";
+    blockDiv.style.zIndex = "";
+    blockDiv.classList.remove("dragging");
+
+    draggingBlock = null;
+
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("touchmove", onMove);
+    window.removeEventListener("mouseup", onEnd);
+    window.removeEventListener("touchend", onEnd);
+    window.removeEventListener("touchcancel", onEnd);
   }
-  draggingBlock = null;
+
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("touchmove", onMove, { passive: false });
+  window.addEventListener("mouseup", onEnd);
+  window.addEventListener("touchend", onEnd);
+  window.addEventListener("touchcancel", onEnd);
+}
+function canPlaceBlock(block, x, y) {
+  const shape = block.shape;
+  if (!block) return false;
+  for (let i = 0; i < shape.length; i++) {
+    for (let j = 0; j < shape[i].length; j++) {
+      if (shape[i][j]) {
+        if (
+          y + i < 0 || y + i >= HEIGHT ||
+          x + j < 0 || x + j >= WIDTH ||
+          board[y + i][x + j]
+        ) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 }
 
-// タッチ用ドラッグセットアップ
-function setupTouchDrag(blockDiv, index) {
-  blockDiv.addEventListener("touchstart", e => {
-    if (gameOver) return;
-    e.preventDefault();
-    draggingBlock = { blockDiv, index };
-    const touch = e.touches[0];
-    const rect = blockDiv.getBoundingClientRect();
-    dragOffsetX = touch.clientX - rect.left;
-    dragOffsetY = touch.clientY - rect.top;
-    blockDiv.style.position = "absolute";
-    blockDiv.style.zIndex = 1000;
-    moveAt(touch.clientX, touch.clientY);
+function placeBlock(block, x, y) {
+  const shape = block.shape;
+  for (let i = 0; i < shape.length; i++) {
+    for (let j = 0; j < shape[i].length; j++) {
+      if (shape[i][j]) {
+        board[y + i][x + j] = 1;
+      }
+    }
+  }
+  removeFullRows();
+  renderBoard();
+  checkGameOver();
+}
 
-    function
+function removeFullRows() {
+  let removedCount = 0;
+
+  const newBoard = board.filter(row => {
+    if (row.every(cell => cell)) {
+      removedCount++;
+      return false;
+    }
+    return true;
+  });
+
+  while (newBoard.length < HEIGHT) {
+    newBoard.unshift(Array(WIDTH).fill(0));
+  }
+
+  board = newBoard;
+
+  if (removedCount > 0) {
+    score += removedCount * 50;
+    updateScore();
+  }
+}
+
+function canPlaceAnywhere(block) {
+  if (!block) return false;
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      if (canPlaceBlock(block, x, y)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function checkGameOver() {
+  if (gameOver) return;
+  const anyPlacable = currentBlocks.some(block => canPlaceAnywhere(block));
+  if (!anyPlacable) {
+    gameOver = true;
+    const gameOverEl = document.getElementById("game-over");
+    if (gameOverEl) gameOverEl.style.display = "block";
+  }
+}
