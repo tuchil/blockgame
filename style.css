@@ -1,100 +1,99 @@
 body {
-  font-family: Arial, sans-serif;
+  font-family: sans-serif;
+  text-align: center;
+  background: #fafafa;
+  margin: 0;
   padding: 20px;
 }
 
-h1 {
-  margin-bottom: 10px;
+#top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 520px;
+  margin: 0 auto 10px;
 }
 
-#score {
-  margin-bottom: 10px;
-  font-weight: bold;
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
 }
 
-#reset-btn {
-  float: right;
-  margin-bottom: 10px;
-  padding: 5px 10px;
-  font-size: 16px;
-  cursor: pointer;
+#game-board {
+  display: grid;
+  grid-template-columns: repeat(8, 40px);
+  grid-template-rows: repeat(8, 40px);
+  gap: 2px;
+  margin-bottom: 20px;
+}
+
+.cell {
+  width: 40px;
+  height: 40px;
+  background-color: #fff;
+  border: 1px solid #ccc;
 }
 
 #block-picker {
   display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-  min-height: 60px;
-  position: relative;
+  justify-content: center;
+  gap: 30px;
 }
 
 .block-slot {
-  width: 80px;
-  height: 80px;
-  border: 1px dashed #ccc;
-  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .block {
-  display: inline-block;
   cursor: grab;
   user-select: none;
+  display: inline-block;
+  /* 初期サイズを小さく（半分サイズに縮小） */
+  transform-origin: top left;
+  transform: scale(0.5);
+  transition: transform 0.2s;
   position: relative;
+  /* ブロックのセルは20x20pxに対応（半分サイズ） */
+}
+
+.block.dragging {
+  /* 拡大してセルサイズに */
+  transform: scale(1);
+  position: absolute;
+  cursor: grabbing;
+  pointer-events: none;
+  z-index: 1000;
+  transition: none;
 }
 
 .block-cell {
-  width: 18px;
-  height: 18px;
+  width: 40px; /* ブロックのセルは40px正方形に */
+  height: 40px;
   margin: 1px;
   box-sizing: border-box;
   border-radius: 3px;
 }
 
-#game-board {
-  width: 344px; /* 8 * (40 + 2 gap) - 2px */
-  height: 344px;
-  display: grid;
-  grid-template-columns: repeat(8, 40px);
-  grid-template-rows: repeat(8, 40px);
-  gap: 2px;
-  background-color: #ddd;
-  border: 2px solid #333;
-  position: relative;
-}
-
-.cell {
-  background-color: #fff;
-  border-radius: 3px;
-  box-sizing: border-box;
-  border: 1px solid #999;
-}
-
-.cell.filled {
-  background-color: #666;
+.block-cell {
+  width: 40px;
+  height: 40px;
+  margin: 0;
 }
 
 #game-over {
   display: none;
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 48px;
-  font-weight: bold;
+  font-size: 2em;
   color: red;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 20px 40px;
-  border: 3px solid red;
-  border-radius: 10px;
-  z-index: 1000;
-  pointer-events: none;
+  margin-top: 20px;
 }
 
-.block.dragging {
-  opacity: 0.7;
-  cursor: grabbing;
-  position: absolute;
-  z-index: 1000;
-  pointer-events: none;
-  user-select: none;
+.cell, .block-cell {
+  box-sizing: border-box;
+  border: 1px solid #ccc;
 }
