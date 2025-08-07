@@ -39,7 +39,7 @@ body {
 #block-picker {
   display: flex;
   justify-content: center; /* 中央揃え */
-  gap: 8px;                /* ブロック間の隙間を8pxに狭める */
+  gap: 3px;                /* ブロック間の隙間を8pxに狭める */
   margin-bottom: 20px;
 }
 
