@@ -50,8 +50,6 @@ body {
 
 .block {
   cursor: grab;
-  width: 20px;
-  height: 20px;
   /* 既に大きさ調整してるならここはそのままでOK */
   /* scaleはJSで制御しているならCSSでは通常サイズで */
   transform-origin: top left;
