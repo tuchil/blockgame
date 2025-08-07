@@ -300,3 +300,21 @@ function checkGameOver() {
     if (gameOverEl) gameOverEl.style.display = "block";
   }
 }
+
+function resetGame() {
+  // 盤面を空に
+  board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(0));
+  // スコア初期化
+  score = 0;
+  updateScore();
+  // ブロック新規選出
+  currentBlocks = pickRandomBlocks();
+  // 盤面・ブロック再描画
+  renderBoard();
+  renderBlocks();
+  // Game Over表示非表示に
+  const gameOverEl = document.getElementById("game-over");
+  gameOverEl.style.display = "none";
+  // ゲーム状態リセット用フラグもあればここで
+  gameIsOver = false;  // もしゲーム終了判定に使ってたら
+}
