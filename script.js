@@ -96,11 +96,21 @@ function renderBlocks() {
       });
 
       // スマホ用タッチ開始
-      blockDiv.addEventListener("touchstart", e => {
-        e.preventDefault();
-        if (gameOver) return;
-        const touch = e.touches[0];
-        startDragging(blockDiv, i, touch.clientX, touch.clientY);
+      blockDiv.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text/plain", i);
+
+        const dragIcon = document.createElement("canvas");
+        const ctx = dragIcon.getContext("2d");
+        const blockSize = 50; // 例として50px四方
+
+        dragIcon.width = blockSize;
+        dragIcon.height = blockSize;
+
+        ctx.fillStyle = block.color;
+        ctx.fillRect(0, 0, blockSize, blockSize);
+
+  
+        e.dataTransfer.setDragImage(dragIcon, blockSize / 2, blockSize / 2 + 20);
       });
 
       blockSlot.appendChild(blockDiv);
