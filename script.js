@@ -128,7 +128,7 @@ function previewSelected() {
             cells[idx].style.backgroundColor = selectedBlock.color;
           } else {
             // 置けないとき → 赤
-            cells[idx].style.backgroundColor = "rgba(255, 0, 0, 0.6)";
+            cells[idx].style.backgroundColor = "rgba(255, 0, 0, 0.7)";
           }
         }
       }
@@ -251,6 +251,15 @@ document.getElementById("reset").addEventListener("click", () => {
   renderBlocks();
   updateScore();
 });
+
+let lastTouchTime = 0;
+document.addEventListener('touchstart', function(e) {
+  const now = Date.now();
+  if (now - lastTouchTime <= 300) { // 300ms以内の連続タップを無効
+    e.preventDefault();
+  }
+  lastTouchTime = now;
+}, { passive: false });
 
 // --- 初期化 ---
 createBoard();
