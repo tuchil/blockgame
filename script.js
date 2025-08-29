@@ -55,6 +55,7 @@ const blockShapes = [
   { shape: [[1,0],[0,1]], color: "rgba(225,0,0,0.5)" },
   { shape: [[0,1],[1,0]],color: "blue" },
   { shape: [[1,1,0],[0,1,1]],color: "rgba(255,105,180)" },
+  { shape: [[1,1,1],[1,1,1]],color: "rgba(65,105,225)" }
 ];
 
 function randomBlock() {
@@ -255,7 +256,7 @@ document.getElementById("reset").addEventListener("click", () => {
 let lastTouchTime = 0;
 document.addEventListener('touchstart', function(e) {
   const now = Date.now();
-  if (now - lastTouchTime <= 300) { 
+  if (now - lastTouchTime <= 1000) { // 300ms以内の連続タップを無効
     e.preventDefault();
   }
   lastTouchTime = now;
