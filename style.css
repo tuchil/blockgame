@@ -49,7 +49,7 @@ body {
 /* スロット全体 */
 #block-picker {
   display: flex;
-  gap: 10px;
+  gap: 20px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -94,6 +94,10 @@ body {
   font-size: 20px;
   padding: 10px;
   cursor: pointer;
+  background-color: black; /* ここを黒に */
+  color: white;            /* 文字色を白に */
+  border: none;
+  border-radius: 5px;      /* 好みで角を少し丸く */
 }
 
 #up { grid-column: 2; grid-row: 1; }
@@ -102,7 +106,6 @@ body {
   border-radius:50%;
   grid-column: 2;
   grid-row: 2;
-  background: orange;
 }
 #right { grid-column: 3; grid-row: 2; }
 #down { grid-column: 2; grid-row: 3; }
