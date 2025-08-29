@@ -191,7 +191,7 @@ function checkLines() {
       cleared++;
     }
   }
-  score += cleared * 50;
+  score += cleared * 100;
 }
 
 function updateScore() {
