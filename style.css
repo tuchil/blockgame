@@ -2,10 +2,8 @@ body {
   font-family: Arial, sans-serif;
   text-align: center;
   background: #fafafa;
-}
-
-h1 {
-  margin: 10px 0;
+  margin: 0;
+  padding: 0;
 }
 
 #score {
@@ -20,6 +18,7 @@ h1 {
   gap: 2px;
   margin: 20px auto;
   width: fit-content;
+  touch-action: none;
 }
 
 .cell {
@@ -27,25 +26,23 @@ h1 {
   height: 40px;
   border: 1px solid #ccc;
   background-color: white;
+  box-sizing: border-box;
 }
-
-
 
 .cell.blocked-preview {
   background-color: rgba(255, 0, 0, 0.5); /* 半透明赤 */
 }
 
-
 .cell.filled {
   background: gray;
 }
 
-/* スロットとボタンの横並び配置 */
+/* スロットとボタンの縦並び配置 */
 #block-picker-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
+  flex-direction: column; /* スロットとボタンを縦に並べる */
+  align-items: center;    /* スロットは中央 */
+  gap: 10px;
   margin-top: 20px;
 }
 
@@ -53,8 +50,8 @@ h1 {
 #block-picker {
   display: flex;
   gap: 10px;
-  min-width: 400px; /* 3スロット分を常に確保 */
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* スロット枠 */
@@ -73,13 +70,19 @@ h1 {
 }
 
 .block-cell {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border: 1px solid #999;
   box-sizing: border-box;
 }
 
 /* 十字ボタン */
+#controls-wrapper {
+  display: flex;
+  justify-content: flex-end; /* 右寄せ */
+  width: 100%;
+}
+
 #controls {
   display: grid;
   grid-template-columns: 60px 60px 60px;
@@ -93,56 +96,66 @@ h1 {
   cursor: pointer;
 }
 
-#up {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-#left {
-  grid-column: 1;
-  grid-row: 2;
-}
-
+#up { grid-column: 2; grid-row: 1; }
+#left { grid-column: 1; grid-row: 2; }
 #place {
   border-radius:50%;
   grid-column: 2;
   grid-row: 2;
   background: orange;
 }
-
-#right {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-#down {
-  grid-column: 2;
-  grid-row: 3;
-}
-
+#right { grid-column: 3; grid-row: 2; }
+#down { grid-column: 2; grid-row: 3; }
 /* ゲームオーバー表示 */
 #game-over {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 48px;
-  background-color: rgba(0,0,0,0.6);
-     background-clip: border-box;
-	padding: 50px;
+  font-size: 36px;
+  background-color: rgba(0,0,0,0.7);
+  padding: 40px;
   color: white;
   font-weight: bold;
   text-align: center;
   z-index: 10;
+  border-radius: 20px;
 }
 
-#game-over span {
-  display: block;
-  font-size: 24px;
+#game-over button {
   margin-top: 20px;
-  color: black;
+  font-size: 20px;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 10px;
+  background-color: #ff6600;
+  color: white;
+  border: none;
 }
 
 .hidden {
   display: none;
+}
+
+/* スマホ向け調整 */
+@media (max-width: 500px) {
+  #game-board {
+    transform: scale(0.8);
+  }
+  .block-cell {
+    width: 25px;
+    height: 25px;
+  }
+  .block-slot {
+    width: 70px;
+    height: 70px;
+  }
+  #controls {
+    grid-template-columns: 50px 50px 50px;
+    grid-template-rows: 50px 50px 50px;
+  }
+  #controls button {
+    font-size: 20px;
+    padding: 8px;
+  }
 }
