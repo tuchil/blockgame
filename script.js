@@ -1,68 +1,70 @@
-const WIDTH = 8;
-const HEIGHT = 8;
-const CELL_SIZE = 40; // セルの大きさ(px)
-
+const BOARD_SIZE = 8;
+const CELL_SIZE = 40;
+const boardEl = document.getElementById("game-board");
+const blockSlotsEl = document.getElementById("block-picker");
+const scoreEl = document.getElementById("score");
+const gameOverEl = document.getElementById("game-over");
+let board = [];
+let currentBlocks = [];
+let selectedBlock = null;
+let selectedX = 0;
+let selectedY = 0;
 let score = 0;
-let board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(0));
-
-const blockTypes = [
-  { shape: [[1, 1, 1, 1]], color: "#f00" },
-  { shape: [[1, 1], [1, 1]], color: "#0f0" },
-  { shape: [[1]], color: "#00f" },
-  { shape: [[1, 1, 0], [0, 1, 1]], color: "#ff0" },
-  { shape: [[0, 1, 1], [1, 1, 0]], color: "#0ff" },
-  { shape: [[1, 0], [1, 1], [1, 0]], color: "#f0f" },
-  { shape: [[0, 1, 0], [1, 1, 1]], color: "#999" }
-];
-
-let currentBlocks = pickRandomBlocks();
-
-let draggingBlock = null;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
 let gameOver = false;
 
-updateScore();
-createBoard();
-renderBoard();
-renderBlocks();
-
-function updateScore() {
-  const scoreEl = document.getElementById("score");
-  if (scoreEl) {
-    scoreEl.textContent = `スコア: ${score}`;
-  }
-}
-
 function createBoard() {
-  const boardElement = document.getElementById("game-board");
-  boardElement.innerHTML = "";
-  for (let i = 0; i < HEIGHT * WIDTH; i++) {
-    const cell = document.createElement("div");
-    cell.classList.add("cell");
-    cell.dataset.index = i;
-    boardElement.appendChild(cell);
+  boardEl.innerHTML = "";
+  board = [];
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    let row = [];
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      boardEl.appendChild(cell);
+      row.push(null);
+    }
+    board.push(row);
   }
 }
 
 function renderBoard() {
-  const cells = document.querySelectorAll("#game-board .cell");
-  for (let y = 0; y < HEIGHT; y++) {
-    for (let x = 0; x < WIDTH; x++) {
-      const index = y * WIDTH + x;
-      cells[index].style.backgroundColor = board[y][x] ? "#666" : "#fff";
+  const cells = boardEl.querySelectorAll(".cell");
+  let idx = 0;
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      cells[idx].className = "cell"; // reset
+      if (board[y][x]) {
+        cells[idx].classList.add("filled");
+        cells[idx].style.backgroundColor = "gray"; // ← 常に灰色
+      } else {
+        cells[idx].style.backgroundColor = "transparent";
+      }
+      idx++;
     }
   }
 }
 
-function pickRandomBlocks() {
-  const shuffled = [...blockTypes].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 3);
+
+const blockShapes = [
+  { shape: [[1]], color: "yellow" },       // 1×1
+  { shape: [[1,1]], color: "orange" },     // 1×2
+  { shape: [[1],[1]], color: "cyan" },     // 2×1
+  { shape: [[1,1,1]], color: "lime" },    // 1×3
+  { shape: [[1],[1],[1]], color: "rgba(186,85,211)" }, // 3×1
+  { shape: [[1,1],[1,1]], color: "rgba(127,255,212)" },  // 2×2
+  { shape: [[1,0],[0,1]], color: "rgba(225,0,0,0.5)" },
+  { shape: [[0,1],[1,0]],color: "blue" },
+  { shape: [[1,1,0],[0,1,1]],color: "rgba(255,105,180)" },
+];
+
+function randomBlock() {
+  const idx = Math.floor(Math.random() * blockShapes.length);
+  return { ...blockShapes[idx] }; // shape と color をそのままコピー
 }
 
+
 function renderBlocks() {
-  const picker = document.getElementById("block-picker");
-  picker.innerHTML = "";
+  blockSlotsEl.innerHTML = "";
 
   for (let i = 0; i < 3; i++) {
     const blockSlot = document.createElement("div");
@@ -73,8 +75,6 @@ function renderBlocks() {
       const blockDiv = document.createElement("div");
       blockDiv.classList.add("block");
       blockDiv.dataset.index = i;
-      blockDiv.style.position = "relative";
-      blockDiv.style.transform = "scale(0.5)";
 
       block.shape.forEach(row => {
         const rowDiv = document.createElement("div");
@@ -82,226 +82,179 @@ function renderBlocks() {
         row.forEach(cell => {
           const cellDiv = document.createElement("div");
           cellDiv.classList.add("block-cell");
+          cellDiv.style.width = CELL_SIZE + "px";
+          cellDiv.style.height = CELL_SIZE + "px";
           cellDiv.style.backgroundColor = cell ? block.color : "transparent";
           rowDiv.appendChild(cellDiv);
         });
         blockDiv.appendChild(rowDiv);
       });
 
-      // PC用ドラッグ開始
-      blockDiv.addEventListener("mousedown", e => {
-        e.preventDefault();
-        if (gameOver) return;
-        startDragging(blockDiv, i, e.clientX, e.clientY);
+      blockDiv.addEventListener("click", () => {
+        selectedBlock = { ...block, slot: i };
+        selectedX = 0;
+        selectedY = 0;
+        previewSelected();
       });
 
-      // スマホ用ドラッグ開始
-      blockDiv.addEventListener("touchstart", e => {
-        e.preventDefault();
-        if (gameOver) return;
-        const touch = e.touches[0];
-        startDragging(blockDiv, i, touch.clientX, touch.clientY);
-      });
-
-      picker.appendChild(blockSlot);
       blockSlot.appendChild(blockDiv);
-    } else {
-      blockSlot.innerHTML = "";
-      blockSlot.style.pointerEvents = "none";
-      picker.appendChild(blockSlot);
     }
+
+    blockSlotsEl.appendChild(blockSlot);
   }
 }
 
-function startDragging(blockDiv, index, clientX, clientY) {
-  draggingBlock = { blockDiv, index };
 
-  const rect = blockDiv.getBoundingClientRect();
 
-  dragOffsetX = clientX - rect.left;
-  dragOffsetY = clientY - rect.top;
+function previewSelected() {
+  renderBoard(); // 既存ブロック描画
 
-  blockDiv.style.position = "absolute";
-  blockDiv.style.transform = "scale(1)";
-  blockDiv.style.width = `${CELL_SIZE * currentBlocks[index].shape[0].length}px`;
-  blockDiv.style.height = `${CELL_SIZE * currentBlocks[index].shape.length}px`;
-  blockDiv.style.zIndex = 1000;
-  blockDiv.classList.add("dragging");
+  if (!selectedBlock) return;
 
-  moveAt(clientX, clientY);
+  const cells = boardEl.querySelectorAll(".cell");
+  const canPlaceBlock = canPlace(selectedBlock, selectedX, selectedY);
 
-  function moveAt(pageX, pageY) {
-    blockDiv.style.left = (pageX - dragOffsetX) + "px";
-    blockDiv.style.top = (pageY - dragOffsetY) + "px";
-  }
+  selectedBlock.shape.forEach((row, dy) => {
+    row.forEach((val, dx) => {
+      if (val) {
+        const px = selectedX + dx;
+        const py = selectedY + dy;
+        if (px >= 0 && px < BOARD_SIZE && py >= 0 && py < BOARD_SIZE) {
+          const idx = py * BOARD_SIZE + px;
+          cells[idx].classList.remove("filled", "preview", "blocked-preview");
 
-  function onMove(event) {
-    event.preventDefault();
-    let x, y;
-    if (event.type.startsWith("touch")) {
-      x = event.touches[0].clientX;
-      y = event.touches[0].clientY;
-    } else {
-      x = event.clientX;
-      y = event.clientY;
-    }
-    moveAt(x, y);
-  }
-
-  function onEnd(event) {
-    event.preventDefault();
-    let x, y;
-    if (event.type.startsWith("touch")) {
-      x = event.changedTouches[0].clientX;
-      y = event.changedTouches[0].clientY;
-    } else {
-      x = event.clientX;
-      y = event.clientY;
-    }
-
-    const boardRect = document.getElementById("game-board").getBoundingClientRect();
-
-    // ドロップ位置を盤面内座標に変換（左上セルの座標に補正せずブロック中心で判断）
-    const dropX = x - boardRect.left - (blockDiv.offsetWidth / 2);
-    const dropY = y - boardRect.top - (blockDiv.offsetHeight / 2);
-
-    const gridX = Math.round(dropX / CELL_SIZE);
-    const gridY = Math.round(dropY / CELL_SIZE);
-
-    if (canPlaceBlock(currentBlocks[index], gridX, gridY)) {
-      placeBlock(currentBlocks[index], gridX, gridY);
-      currentBlocks[index] = null;
-      score += 10;
-      updateScore();
-      renderBlocks();
-
-      if (currentBlocks.every(b => b === null)) {
-        currentBlocks = pickRandomBlocks();
-        renderBlocks();
-      }
-    } else {
-      renderBlocks();
-    }
-
-    blockDiv.style.position = "relative";
-    blockDiv.style.transform = "scale(0.5)";
-    blockDiv.style.width = "";
-    blockDiv.style.height = "";
-    blockDiv.style.left = "";
-    blockDiv.style.top = "";
-    blockDiv.style.zIndex = "";
-    blockDiv.classList.remove("dragging");
-
-    draggingBlock = null;
-
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("touchmove", onMove);
-    window.removeEventListener("mouseup", onEnd);
-    window.removeEventListener("touchend", onEnd);
-    window.removeEventListener("touchcancel", onEnd);
-  }
-
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("touchmove", onMove, { passive: false });
-  window.addEventListener("mouseup", onEnd);
-  window.addEventListener("touchend", onEnd);
-  window.addEventListener("touchcancel", onEnd);
-}
-
-function canPlaceBlock(block, x, y) {
-  if (!block) return false;
-  const shape = block.shape;
-  for (let i = 0; i < shape.length; i++) {
-    for (let j = 0; j < shape[i].length; j++) {
-      if (shape[i][j]) {
-        if (
-          y + i < 0 || y + i >= HEIGHT ||
-          x + j < 0 || x + j >= WIDTH ||
-          board[y + i][x + j]
-        ) {
-          return false;
+          if (canPlaceBlock) {
+            // 置けるとき → ブロック固有の色
+            cells[idx].style.backgroundColor = selectedBlock.color;
+          } else {
+            // 置けないとき → 赤
+            cells[idx].style.backgroundColor = "rgba(255, 0, 0, 0.6)";
+          }
         }
+      }
+    });
+  });
+}
+
+
+
+
+function canPlace(block, x, y) {
+  for (let dy=0; dy<block.shape.length; dy++) {
+    for (let dx=0; dx<block.shape[0].length; dx++) {
+      if (block.shape[dy][dx]) {
+        const px = x+dx, py = y+dy;
+        if (px<0 || px>=BOARD_SIZE || py<0 || py>=BOARD_SIZE) return false;
+        if (board[py][px]) return false;
       }
     }
   }
   return true;
 }
 
-function placeBlock(block, x, y) {
-  const shape = block.shape;
-  for (let i = 0; i < shape.length; i++) {
-    for (let j = 0; j < shape[i].length; j++) {
-      if (shape[i][j]) {
-        board[y + i][x + j] = 1;
+function placeBlock() {
+  if (!selectedBlock) return;
+  if (!canPlace(selectedBlock, selectedX, selectedY)) return;
+  selectedBlock.shape.forEach((row, dy) => {
+    row.forEach((val, dx) => {
+      if (val) {
+        board[selectedY+dy][selectedX+dx] = "gray";  // ← 確定時は灰色で固定！
       }
-    }
-  }
-  removeFullRows();
+    });
+  });
+  currentBlocks[selectedBlock.slot] = null;
+  selectedBlock = null;
+  score += 10;
+  checkLines();
+  renderBlocks();
   renderBoard();
+  updateScore();
   checkGameOver();
 }
 
-function removeFullRows() {
-  let removedCount = 0;
 
-  const newBoard = board.filter(row => {
-    if (row.every(cell => cell)) {
-      removedCount++;
-      return false;
+function checkLines() {
+  let cleared = 0;
+  // 横
+  for (let y=0; y<BOARD_SIZE; y++) {
+    if (board[y].every(cell => cell)) {
+      board[y] = Array(BOARD_SIZE).fill(null);
+      cleared++;
     }
-    return true;
-  });
-
-  while (newBoard.length < HEIGHT) {
-    newBoard.unshift(Array(WIDTH).fill(0));
   }
-
-  board = newBoard;
-
-  if (removedCount > 0) {
-    score += removedCount * 50;
-    updateScore();
+  // 縦
+  for (let x=0; x<BOARD_SIZE; x++) {
+    if (board.every(row => row[x])) {
+      for (let y=0; y<BOARD_SIZE; y++) board[y][x] = null;
+      cleared++;
+    }
   }
+  score += cleared * 50;
 }
 
-function canPlaceAnywhere(block) {
-  if (!block) return false;
-  for (let y = 0; y < HEIGHT; y++) {
-    for (let x = 0; x < WIDTH; x++) {
-      if (canPlaceBlock(block, x, y)) {
-        return true;
-      }
-    }
-  }
-  return false;
+function updateScore() {
+  scoreEl.textContent = "スコア: " + score;
 }
 
 function checkGameOver() {
-  if (gameOver) return;
-  const anyPlacable = currentBlocks.some(block => canPlaceAnywhere(block));
-  if (!anyPlacable) {
-    gameOver = true;
-    const gameOverEl = document.getElementById("game-over");
-    if (gameOverEl) gameOverEl.style.display = "block";
+  if (currentBlocks.every(b => b===null)) {
+    currentBlocks = [randomBlock(), randomBlock(), randomBlock()];
+    renderBlocks();
+    return;
   }
+  for (let block of currentBlocks) {
+    if (!block) continue;
+    for (let y=0; y<BOARD_SIZE; y++) {
+      for (let x=0; x<BOARD_SIZE; x++) {
+        if (canPlace(block, x, y)) return;
+      }
+    }
+  }
+  gameOver = true;
+  gameOverEl.classList.remove("hidden");
 }
 
-function resetGame() {
-  board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(0));
-  score = 0;
-  updateScore();
-  currentBlocks = pickRandomBlocks();
-  renderBoard();
-  renderBlocks();
-  const gameOverEl = document.getElementById("game-over");
-  if (gameOverEl) gameOverEl.style.display = "none";
-  gameOver = false;
-  draggingBlock = null;
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  const resetBtn = document.getElementById("reset-button");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", resetGame);
-  }
+// --- 操作ボタン ---
+document.getElementById("up").addEventListener("click", () => {
+  if (!selectedBlock) return;
+  selectedY = Math.max(0, selectedY-1);
+  previewSelected();
 });
+
+document.getElementById("down").addEventListener("click", () => {
+  if (!selectedBlock) return;
+  const maxY = BOARD_SIZE - selectedBlock.shape.length;
+  selectedY = Math.min(maxY, selectedY + 1);
+  previewSelected();
+});
+document.getElementById("left").addEventListener("click", () => {
+  if (!selectedBlock) return;
+  selectedX = Math.max(0, selectedX-1);
+  previewSelected();
+});
+document.getElementById("right").addEventListener("click", () => {
+  if (!selectedBlock) return;
+  const maxX = BOARD_SIZE - selectedBlock.shape[0].length;
+  selectedX = Math.min(maxX, selectedX + 1);
+  previewSelected();
+});
+
+document.getElementById("place").addEventListener("click", placeBlock);
+
+document.getElementById("reset").addEventListener("click", () => {
+  score = 0;
+  gameOver = false;
+  gameOverEl.classList.add("hidden");
+  createBoard();
+  renderBoard();
+  currentBlocks = [randomBlock(), randomBlock(), randomBlock()];
+  renderBlocks();
+  updateScore();
+});
+
+// --- 初期化 ---
+createBoard();
+renderBoard();
+currentBlocks = [randomBlock(), randomBlock(), randomBlock()];
+renderBlocks();
+updateScore();
