@@ -1,22 +1,30 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ブロック配置ゲーム</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>広告のゲーム</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>広告のゲーム</h1>
-  <div id="top-bar">
-    <div id="score">スコア: 0</div>
-    <button id="reset-button">リセット</button>
-  </div>
-  <div id="game-container">
-    <div id="game-board"></div>
+  <div id="score">スコア: 0</div>
+  <div id="game-board"></div>
+
+  <div id="block-picker-container">
     <div id="block-picker"></div>
+    <div id="controls">
+      <button id="up">▲</button>
+      <button id="left">◀</button>
+      <button id="place">●</button>
+      <button id="right">▶</button>
+      <button id="down">▼</button>
+    </div>
   </div>
-  <div id="game-over">Game Over</div>
+
+  <div id="game-over" class="hidden">
+    <p>Game Over</p>
+    <button id="reset">リセット</button>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
