@@ -256,7 +256,7 @@ document.getElementById("reset").addEventListener("click", () => {
 let lastTouchTime = 0;
 document.addEventListener('touchstart', function(e) {
   const now = Date.now();
-  if (now - lastTouchTime <= 1000) { // 300ms以内の連続タップを無効
+  if (now - lastTouchTime <= 300) { // 300ms以内の連続タップを無効
     e.preventDefault();
   }
   lastTouchTime = now;
