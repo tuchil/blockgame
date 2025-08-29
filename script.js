@@ -77,6 +77,7 @@ function renderBlocks() {
       blockDiv.classList.add("block");
       blockDiv.dataset.index = i;
 
+      const slot_cell_size = 20;
       block.shape.forEach(row => {
         const rowDiv = document.createElement("div");
         rowDiv.style.display = "flex";
